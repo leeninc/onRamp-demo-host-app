@@ -4,21 +4,22 @@ import LoginForm from './LoginForm';
 
 const App: React.FC = () => {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
+  const [errorMessage, setErrorMessage] = useState<string>('');
 
   const handleLogin = (username: string, password: string): void => {
     const adminUsername = import.meta.env.VITE_REACT_APP_ADMIN_USERNAME;
     const adminPassword = import.meta.env.VITE_REACT_APP_ADMIN_PASSWORD;
 
     if (!adminUsername || !adminPassword) {
-      console.error('Admin credentials are not set in environment variables');
-      alert('Server configuration error. Please contact the administrator.');
+      setErrorMessage('Server configuration error.');
       return;
     }
 
     if (username === adminUsername && password === adminPassword) {
       setIsAuthenticated(true);
+      setErrorMessage('');
     } else {
-      alert('Invalid credentials');
+      setErrorMessage('Invalid credentials');
     }
   };
 
@@ -27,7 +28,7 @@ const App: React.FC = () => {
       <div className="min-h-screen flex flex-col justify-center items-center bg-[#f6f5ef]">
         <div className="font-bold text-4xl mb-8">OnRamp Demo</div>
         <div className="mb-4">Please login to access the app.</div>
-        <LoginForm onLogin={handleLogin} />
+        <LoginForm onLogin={handleLogin} errorMessage={errorMessage} />
       </div>
     );
   }
