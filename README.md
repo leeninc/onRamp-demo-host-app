@@ -23,6 +23,8 @@ Then, create a `.env` file and add the following envvars:
 VITE_REACT_APP_LEEN_BASE_URL=https://api.leen.dev/v1
 VITE_REACT_APP_API_KEY=your-api-key
 VITE_REACT_APP_ORG_ID=your-org-id
+VITE_REACT_APP_ADMIN_USERNAME=username
+VITE_REACT_APP_ADMIN_PASSWORD=password
 ```
 
 You can then run the app by running:
