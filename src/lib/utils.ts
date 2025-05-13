@@ -73,4 +73,10 @@ export const vendorsData: VendorDataResponse[] = [
     logoUrl: '/vendorIcons/SentinelOne.jpg',
     tag: 'EDR',
   },
+  {
+    vendor: 'GITLAB',
+    vendorName: 'Gitlab VMS',
+    logoUrl: '/vendorIcons/SentinelOne.jpg',
+    tag: 'VMS',
+  },
 ];
