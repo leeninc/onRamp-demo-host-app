@@ -1,7 +1,7 @@
-import { vendorsData } from '@/lib/utils';
-import { SetStateAction, useState } from 'react';
+import { SetStateAction, useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import useCreateConnection from '@/lib/hooks/useCreateConnectionInviteToken';
+import useGetConnectors, { VendorData } from '@/lib/hooks/useGetConnectors';
 import { LeenOnRamp, LeenOnRampResponse } from '@leendev/onramp';
 import { Loader2, SearchIcon } from 'lucide-react';
 import { toast } from './ui/use-toast';
@@ -10,6 +10,10 @@ import { Toaster } from './ui/toaster';
 const HostApp = () => {
   const orgId = import.meta.env.VITE_REACT_APP_ORG_ID;
   const apiKey = import.meta.env.VITE_REACT_APP_API_KEY;
+
+  const [dynamicVendorsData, setDynamicVendorsData] = useState<VendorData[]>([]);
+  const [vendorsLoading, setVendorsLoading] = useState<boolean>(true);
+  const [vendorsError, setVendorsError] = useState<string | null>(null);
 
   const [selectedVendorName, setSelectedVendorName] = useState<
     string | undefined
@@ -24,6 +28,29 @@ const HostApp = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedTag, setSelectedTag] = useState<string>('ALL');
   const { createConnection } = useCreateConnection(setIsApiCallInProgress);
+  const { getConnectors } = useGetConnectors(setIsApiCallInProgress);
+
+  useEffect(() => {
+    const fetchVendors = async () => {
+      try {
+        setVendorsLoading(true);
+        const data = await getConnectors();
+        setDynamicVendorsData(data);
+        setVendorsError(null);
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : 'Failed to fetch vendors';
+        setVendorsError(errorMessage);
+        toast({
+          title: 'Error fetching vendor data',
+          variant: 'destructive',
+          description: errorMessage,
+        });
+      } finally {
+        setVendorsLoading(false);
+      }
+    };
+    fetchVendors();
+  }, [getConnectors]);
 
   const handleSearchChange = (event: {
     target: { value: SetStateAction<string> };
@@ -32,7 +59,7 @@ const HostApp = () => {
     setSelectedTag('ALL');
   };
 
-  const filteredData = vendorsData.filter((vendor) =>
+  const filteredData = dynamicVendorsData.filter((vendor) =>
     vendor.vendorName.toLowerCase().includes(searchTerm.toLowerCase()),
   );
 
@@ -51,7 +78,7 @@ const HostApp = () => {
   const filteredByTagsData =
     selectedTag === 'ALL'
       ? filteredData
-      : vendorsData.filter((vendor) => vendor.tag === selectedTag);
+      : dynamicVendorsData.filter((vendor) => vendor.tag === selectedTag);
   const handleIconClick = (vendor: string): void => {
     setSelectedVendorName(vendor);
   };
@@ -109,7 +136,7 @@ const HostApp = () => {
               ALL
             </button>
             {Array.from(
-              new Set(vendorsData.flatMap((vendor) => vendor.tag)),
+              new Set(dynamicVendorsData.flatMap((vendor) => vendor.tag)),
             ).map((tag) => (
               <button
                 key={tag}
@@ -126,7 +153,17 @@ const HostApp = () => {
           </div>
           <div className="overflow-y-auto scroll-smooth w-[800px] h-[535px] bg-white rounded-md">
             <div className="grid grid-cols-4">
-              {filteredByTagsData.map((vendor) => (
+              {vendorsLoading && (
+                <div className="col-span-4 flex justify-center items-center h-full">
+                  <Loader2 className="animate-spin text-gray-500" size={48} />
+                </div>
+              )}
+              {vendorsError && (
+                <div className="col-span-4 flex justify-center items-center h-full text-red-500">
+                  Error: {vendorsError}
+                </div>
+              )}
+              {!vendorsLoading && !vendorsError && filteredByTagsData.map((vendor) => (
                 <button
                   key={vendor.vendor}
                   onClick={() => handleIconClick(vendor.vendor)}
@@ -147,7 +184,7 @@ const HostApp = () => {
                 </button>
               ))}
             </div>
-            {filteredByTagsData.length === 0 && (
+            { !vendorsLoading && !vendorsError && filteredByTagsData.length === 0 && (
               <div className="text-center text-xl font-semibold">
                 Vendor not found!
               </div>
