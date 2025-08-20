@@ -211,7 +211,7 @@ const HostApp = () => {
           token={token}
           setShowLeenOnRamp={setShowLeenOnRamp}
           setLeenOnRampResponse={setLeenOnRampResponse}
-          // bundleVersion="0.0.18"
+          bundleVersion="dev"
           darkMode={true}
           // bundleVersion="0.0.19"
           darkModeColor={{
