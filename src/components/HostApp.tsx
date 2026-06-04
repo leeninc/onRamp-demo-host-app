@@ -1,4 +1,4 @@
-import { SetStateAction, useEffect, useState } from 'react';
+import { SetStateAction, useEffect, useMemo, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import useCreateConnection from '@/lib/hooks/useCreateConnectionInviteToken';
 import useGetConnectors, { VendorData } from '@/lib/hooks/useGetConnectors';
@@ -29,6 +29,11 @@ const HostApp = () => {
   const [selectedTag, setSelectedTag] = useState<string>('ALL');
   const { createConnection } = useCreateConnection(setIsApiCallInProgress);
   const { getConnectors } = useGetConnectors(setIsApiCallInProgress);
+
+  const selectedVendor = useMemo(
+    () => dynamicVendorsData.find(v => v.vendor === selectedVendorName),
+    [dynamicVendorsData, selectedVendorName],
+  );
 
   useEffect(() => {
     const fetchVendors = async () => {
@@ -85,7 +90,8 @@ const HostApp = () => {
 
   const handleConnect = () => {
     setToken(undefined);
-    createConnection(apiKey, orgId, selectedVendorName)
+    const vendorToConnect = selectedVendor?.connectAs ?? selectedVendorName;
+    createConnection(apiKey, orgId, vendorToConnect)
       .then((response) => {
         setToken(response?.data.token);
         setShowLeenOnRamp(true);
@@ -180,7 +186,7 @@ const HostApp = () => {
                       alt={vendor.vendor}
                     />
                   </div>
-                  <div className="mt-2 text-sm">{vendor.vendorName}</div>
+                  <div className="mt-2 text-sm">{vendor.brandingOverride?.vendorName ?? vendor.vendorName}</div>
                 </button>
               ))}
             </div>
@@ -219,6 +225,20 @@ const HostApp = () => {
             secondary: "#500073",
             border: "#500073",
           }}
+          {...(selectedVendor?.brandingOverride?.logoUrl && {
+            logoUrl: selectedVendor.brandingOverride.logoUrl,
+          })}
+          {...(selectedVendor?.brandingOverride?.docsUrl && {
+            docsUrlOverrides: {
+              [selectedVendor.connectAs ?? selectedVendorName ?? '']: selectedVendor.brandingOverride.docsUrl,
+            },
+          })}
+          {...(selectedVendor?.brandingOverride?.vendorName && {
+            vendorName: selectedVendor.brandingOverride.vendorName,
+          })}
+          {...(selectedVendor?.generate_api_key && {
+            generate_api_key: selectedVendor.generate_api_key,
+          })}
         />
       )}
       {leenOnRampResponse && (
