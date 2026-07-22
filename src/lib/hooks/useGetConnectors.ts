@@ -14,6 +14,13 @@ export interface VendorData {
   vendorName: string;
   logoUrl: string;
   tag: string;
+  connectAs?: string;
+  brandingOverride?: {
+    logoUrl?: string;
+    docsUrl?: string;
+    vendorName?: string;
+  };
+  generate_api_key?: boolean;
 }
 
 function useGetConnectors(
@@ -34,6 +41,24 @@ function useGetConnectors(
         logoUrl: connector.logo_url,
         tag: connector.category,
       }));
+      const servicenow = transformedData.find(v => v.vendor === 'SERVICENOW');
+      const sscIndex = transformedData.findIndex(v => v.vendor === 'SECURITY_SCORECARD');
+      if (sscIndex !== -1 && servicenow) {
+        transformedData.splice(sscIndex + 1, 0, {
+          vendor: 'securityscorecard_servicenow',
+          vendorName: 'SecurityScoreCard - ServiceNow',
+          logoUrl: servicenow.logoUrl,
+          tag: transformedData[sscIndex].tag,
+          connectAs: 'SECURITY_SCORECARD',
+          brandingOverride: {
+            logoUrl: servicenow.logoUrl,
+            docsUrl: 'https://securityscorecard.com/',
+            vendorName: 'SecurityScoreCard - ServiceNow',
+          },
+          generate_api_key: true,
+        });
+      }
+
       return transformedData;
     } catch (err) {
       console.error('Error fetching connectors:', err);
