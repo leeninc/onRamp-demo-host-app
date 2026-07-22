@@ -3,9 +3,10 @@ import { Button } from '@/components/ui/button';
 import useCreateConnection from '@/lib/hooks/useCreateConnectionInviteToken';
 import useGetConnectors, { VendorData } from '@/lib/hooks/useGetConnectors';
 import { LeenOnRamp, LeenOnRampResponse } from '@leendev/onramp';
-import { Loader2, SearchIcon } from 'lucide-react';
+import { CheckCircle2, Loader2, SearchIcon } from 'lucide-react';
 import { toast } from './ui/use-toast';
 import { Toaster } from './ui/toaster';
+import '@/types/onramp-augment.d.ts';
 
 const HostApp = () => {
   const orgId = import.meta.env.VITE_REACT_APP_ORG_ID;
@@ -30,10 +31,19 @@ const HostApp = () => {
   const { createConnection } = useCreateConnection(setIsApiCallInProgress);
   const { getConnectors } = useGetConnectors(setIsApiCallInProgress);
 
+  // Pattern B (ProcessUnity) chained-flow state: two connections, created
+  // back to back, presented to the user as one continuous setup.
+  const [activeLeg, setActiveLeg] = useState<'first' | 'second'>('first');
+  const [firstLegResponse, setFirstLegResponse] = useState<
+    LeenOnRampResponse | undefined
+  >(undefined);
+  const [showTransition, setShowTransition] = useState(false);
+
   const selectedVendor = useMemo(
-    () => dynamicVendorsData.find(v => v.vendor === selectedVendorName),
+    () => dynamicVendorsData.find((v) => v.vendor === selectedVendorName),
     [dynamicVendorsData, selectedVendorName],
   );
+  const isChainedFlow = !!selectedVendor?.chainVendor;
 
   useEffect(() => {
     const fetchVendors = async () => {
@@ -88,8 +98,9 @@ const HostApp = () => {
     setSelectedVendorName(vendor);
   };
 
-  const handleConnect = () => {
+  const startFirstLeg = () => {
     setToken(undefined);
+    setActiveLeg('first');
     const vendorToConnect = selectedVendor?.connectAs ?? selectedVendorName;
     createConnection(apiKey, orgId, vendorToConnect)
       .then((response) => {
@@ -106,16 +117,76 @@ const HostApp = () => {
       });
   };
 
+  const startSecondLeg = (pairedConnectionId: string) => {
+    if (!selectedVendor?.chainVendor) return;
+    setToken(undefined);
+    setActiveLeg('second');
+    // The pairing (options.connection_id) is set server-side, at invite-token
+    // creation time — it's never something the end user sees or enters.
+    createConnection(apiKey, orgId, selectedVendor.chainVendor, {
+      connection_id: pairedConnectionId,
+    })
+      .then((response) => {
+        setToken(response?.data.token);
+        setShowLeenOnRamp(true);
+      })
+      .catch((error) => {
+        toast({
+          title: error.message,
+          variant: 'destructive',
+          description: 'Please try again!',
+        });
+      });
+  };
+
+  const handleConnect = () => {
+    setFirstLegResponse(undefined);
+    setShowTransition(false);
+    startFirstLeg();
+  };
+
+  // Passed to <LeenOnRamp> as setLeenOnRampResponse. For a chained flow's
+  // first leg, this intercepts the "done" signal and routes to the
+  // transition screen instead of the final result screen.
+  const handleLegResponse = (response: LeenOnRampResponse | undefined) => {
+    if (!response) return;
+    if (isChainedFlow && activeLeg === 'first') {
+      setFirstLegResponse(response);
+      setShowLeenOnRamp(false);
+      setShowTransition(true);
+      return;
+    }
+    // Otherwise this is the final leg — close the widget itself so only
+    // this summary shows, rather than stacking on its own success screen.
+    setShowLeenOnRamp(false);
+    setLeenOnRampResponse(response);
+  };
+
+  const handleContinueToSecondLeg = () => {
+    if (!firstLegResponse) return;
+    setShowTransition(false);
+    startSecondLeg(firstLegResponse.data.id);
+  };
+
   const onBack = () => {
     setLeenOnRampResponse(undefined);
     setSelectedVendorName(undefined);
     setToken(undefined);
+    setActiveLeg('first');
+    setFirstLegResponse(undefined);
+    setShowTransition(false);
   };
+
+  const stepLabel = isChainedFlow
+    ? activeLeg === 'first'
+      ? 'Step 1 of 2 — Connect SecurityScorecard'
+      : 'Step 2 of 2 — Connect ProcessUnity'
+    : undefined;
 
   return (
     <div className="flex flex-col justify-center">
       <Toaster />
-      {!leenOnRampResponse && (
+      {!leenOnRampResponse && !showTransition && (
         <div>
           <div className="flex justify-center items-center mt-8 mb-4">
             <div className="relative w-[400px]">
@@ -212,39 +283,88 @@ const HostApp = () => {
           </div>
         </div>
       )}
+
+      {stepLabel && (showLeenOnRamp || showTransition) && (
+        <div className="flex justify-center mb-4">
+          <span className="rounded-full bg-[#2A004E] text-[#B5FF56] text-xs font-semibold px-4 py-1.5 tracking-wide">
+            {stepLabel}
+          </span>
+        </div>
+      )}
+
+      {showTransition && (
+        <div className="flex flex-col items-center gap-3 w-[480px] mx-auto py-16">
+          <CheckCircle2 className="text-green-500" size={40} />
+          <div className="text-lg font-semibold text-center">
+            SecurityScorecard connected
+          </div>
+          <div className="text-sm text-gray-600 text-center max-w-[380px]">
+            Connection{' '}
+            <code className="bg-gray-100 px-1 rounded text-xs">
+              {firstLegResponse?.data.id}
+            </code>{' '}
+            is live. Now let's link it to your ProcessUnity instance so Leen
+            can start syncing.
+          </div>
+          <Button
+            className="bg-[#B5FF56] text-black hover:bg-[#78a43e] mt-4"
+            onClick={handleContinueToSecondLeg}
+          >
+            {isApiCallInProgress ? (
+              <Loader2 className="animate-spin" />
+            ) : (
+              'Continue to ProcessUnity'
+            )}
+          </Button>
+        </div>
+      )}
+
       {showLeenOnRamp && token !== undefined && (
         <LeenOnRamp
           token={token}
           setShowLeenOnRamp={setShowLeenOnRamp}
-          setLeenOnRampResponse={setLeenOnRampResponse}
+          setLeenOnRampResponse={handleLegResponse}
           bundleVersion="dev"
           darkMode={true}
           // bundleVersion="0.0.19"
           darkModeColor={{
-            primary: "#2A004E",
-            secondary: "#500073",
-            border: "#500073",
+            primary: '#2A004E',
+            secondary: '#500073',
+            border: '#500073',
           }}
           {...(selectedVendor?.brandingOverride?.logoUrl && {
             logoUrl: selectedVendor.brandingOverride.logoUrl,
           })}
           {...(selectedVendor?.brandingOverride?.docsUrl && {
             docsUrlOverrides: {
-              [selectedVendor.connectAs ?? selectedVendorName ?? '']: selectedVendor.brandingOverride.docsUrl,
+              [selectedVendor.connectAs ?? selectedVendorName ?? '']:
+                selectedVendor.brandingOverride.docsUrl,
             },
           })}
           {...(selectedVendor?.brandingOverride?.vendorName && {
             vendorName: selectedVendor.brandingOverride.vendorName,
           })}
-          {...(selectedVendor?.generate_api_key && {
-            generate_api_key: selectedVendor.generate_api_key,
-          })}
+          {...(selectedVendor?.generateApiKey && { generateApiKey: true })}
         />
       )}
+
       {leenOnRampResponse && (
-        <div className="flex flex-col">
+        <div className="flex flex-col w-[520px]">
           <div className="text-xl font-semibold mb-4">Response From Leen</div>
-          <pre className="mt-2 rounded-md bg-slate-950 p-4 text-[#B5FF56]">
+          {isChainedFlow && firstLegResponse && (
+            <>
+              <div className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-1">
+                Step 1 — SecurityScorecard
+              </div>
+              <pre className="mb-4 rounded-md bg-slate-950 p-4 text-[#B5FF56] text-xs overflow-x-auto">
+                <code>{JSON.stringify(firstLegResponse, null, 2)}</code>
+              </pre>
+              <div className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-1">
+                Step 2 — ProcessUnity (paired via options.connection_id)
+              </div>
+            </>
+          )}
+          <pre className="mt-2 rounded-md bg-slate-950 p-4 text-[#B5FF56] text-xs overflow-x-auto">
             <code>{JSON.stringify(leenOnRampResponse, null, 2)}</code>
           </pre>
           <Button className="mt-8 ml-auto" onClick={onBack}>

@@ -9,12 +9,15 @@ function useCreateConnection(
     apiKey: string,
     organizationId: string | undefined,
     vendor: string | undefined,
+    // Server-side-only pairing, e.g. { connection_id: "<ssc connection id>" }
+    // for ProcessUnity. Never accept this from a step the end user controls.
+    options?: Record<string, unknown>,
   ) => {
     setIsApiCallInProgress(true);
     try {
       const response = await axios.post(
         `${baseURl}/provisioning/organizations/${organizationId}/connection-invite-tokens`,
-        { vendor },
+        { vendor, ...(options && { options }) },
         {
           headers: {
             'X-API-KEY': apiKey,
