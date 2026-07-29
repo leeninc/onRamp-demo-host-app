@@ -156,9 +156,10 @@ const HostApp = () => {
       setShowTransition(true);
       return;
     }
-    // Otherwise this is the final leg — close the widget itself so only
-    // this summary shows, rather than stacking on its own success screen.
-    setShowLeenOnRamp(false);
+    // Otherwise this is the final leg — leave the widget open so its own
+    // success screen (with copyable credentials) is shown first. The user
+    // closing that screen triggers setShowLeenOnRamp(false), which reveals
+    // this full response summary underneath.
     setLeenOnRampResponse(response);
   };
 
