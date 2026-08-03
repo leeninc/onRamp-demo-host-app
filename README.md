@@ -36,12 +36,21 @@ bun run dev
 
 ### About `VITE_MOCK_LEEN`
 
-The "SecurityScorecard – ServiceNow" and "SecurityScorecard – ProcessUnity" tiles demonstrate two
-different onRamp integration patterns (see `src/mocks/` and `HostApp.tsx`'s chained-mount flow for
-ProcessUnity's two-connection pairing). With `VITE_MOCK_LEEN=true`, a mock service worker
-intercepts just those two vendors' invite-token/connection-creation calls, so you can click
-through both flows end-to-end without real SecurityScorecard/ProcessUnity credentials — no
-connections are actually created. Every other vendor tile is unaffected and still hits the real
-Leen API. Set `VITE_MOCK_LEEN=false` (or omit it) to have all vendors, including these two, hit
-the real API.
+Only ProcessUnity's invite-token/connection-creation calls are mocked (see `src/mocks/`);
+everything else, hits the real Leen API exactly as it did before.
+
+**SecurityScorecard – ProcessUnity**: a *push destination*, using the two-connection chained-mount
+flow (`HostApp.tsx`). SecurityScorecard (real, already-deployed) connects first; ProcessUnity
+(mocked) is then paired to it via its own `options.connection_id`, and Leen pushes data into it on
+a schedule.
+
+`SERVICENOW_VR` is an ordinary standalone tile served straight from `GET /connectors` — not a
+rebrand and not mocked. It's a pull destination: onRamp's widget detects
+`direction: "PULL_DESTINATION"` on the real validate-token response and shows a "Source Connection
+ID" input instead of a credentials form.
+
+With `VITE_MOCK_LEEN=true`, you can click through the ProcessUnity flow without a real ProcessUnity
+instance — no connection is actually created. Every other vendor tile, including SecurityScorecard
+and ServiceNow VR, is unaffected. Set `VITE_MOCK_LEEN=false` (or omit it) to have all vendors hit
+the real API instead.
 

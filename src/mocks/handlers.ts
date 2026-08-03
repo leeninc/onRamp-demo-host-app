@@ -4,11 +4,12 @@ import { decodeMockToken, encodeMockToken } from './token';
 
 const MOCK_ORG_ID = '5718a24d-f9c8-4276-af80-088ac433e28f';
 
-// Only these two vendors are mocked — Pattern A (ServiceNow, connects as
-// SECURITY_SCORECARD) and Pattern B (ProcessUnity's paired flow). Every
-// other vendor, and the vendor-tile listing itself, hits the real Leen API
-// exactly as it did before, so nothing else in the demo changes behavior.
-const MOCKED_VENDORS = ['SECURITY_SCORECARD', 'PROCESSUNITY'];
+// Only PROCESSUNITY is mocked (paired via options.connection_id). Every
+// other vendor, including SERVICENOW_VR and SECURITY_SCORECARD, hits the
+// real Leen API exactly as it would outside this demo — SERVICENOW_VR's
+// bound-source-connection test tile now does this too, passing a real
+// source connection id via options.connection_id (see useGetConnectors.ts).
+const MOCKED_VENDORS = ['PROCESSUNITY'];
 
 // A real invite-token JWT payload has `vendors` (plural array, from
 // leen_api/adapters/provisioning/provisioning_adapter.py) — only our own
@@ -82,7 +83,7 @@ export const handlers = [
         organization_id: MOCK_ORG_ID,
         oauth2_authorize_url: null,
         identifier: body.identifier ?? null,
-        // Only meaningful for the ServiceNow (direct-pull) pattern.
+        direction: 'SOURCE',
         api_credentials: body.generate_api_credentials
           ? {
               client_id: crypto.randomUUID(),
