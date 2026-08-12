@@ -1,9 +1,10 @@
 import axios from 'axios';
+import { leenApiBaseUrl } from '@/lib/leenRegion';
 
 function useCreateConnection(
   setIsApiCallInProgress: (isApiCallInProgress: boolean) => void,
 ) {
-  const baseURl = import.meta.env.VITE_REACT_APP_LEEN_BASE_URL;
+  const baseURl = leenApiBaseUrl();
 
   const createConnection = async (
     apiKey: string,

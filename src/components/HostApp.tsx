@@ -2,6 +2,7 @@ import { SetStateAction, useEffect, useMemo, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import useCreateConnection from '@/lib/hooks/useCreateConnectionInviteToken';
 import useGetConnectors, { VendorData } from '@/lib/hooks/useGetConnectors';
+import { LEEN_REGION } from '@/lib/leenRegion';
 import { LeenOnRamp, LeenOnRampResponse } from '@leendev/onramp';
 import { CheckCircle2, Loader2, SearchIcon } from 'lucide-react';
 import { toast } from './ui/use-toast';
@@ -326,6 +327,11 @@ const HostApp = () => {
           setShowLeenOnRamp={setShowLeenOnRamp}
           setLeenOnRampResponse={handleLegResponse}
           bundleVersion="dev"
+          // Same region this app minted the token against. Without it the
+          // bundle falls back to whatever base URL was baked in when its own
+          // CI built it, which is how a prod token ends up being validated
+          // against dev. Independent of bundleVersion on purpose.
+          config={{ region: LEEN_REGION }}
           darkMode={true}
           // bundleVersion="0.0.19"
           darkModeColor={{

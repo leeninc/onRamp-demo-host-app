@@ -4,11 +4,17 @@ import { decodeMockToken, encodeMockToken } from './token';
 
 const MOCK_ORG_ID = '5718a24d-f9c8-4276-af80-088ac433e28f';
 
-// Only PROCESSUNITY is mocked (paired via options.connection_id). Every
-// other vendor, including SERVICENOW_VR and SECURITY_SCORECARD, hits the
-// real Leen API exactly as it would outside this demo — SERVICENOW_VR's
-// bound-source-connection test tile now does this too, passing a real
-// source connection id via options.connection_id (see useGetConnectors.ts).
+// Only PROCESSUNITY is mocked (paired via options.connection_id, set at
+// invite-token creation time — see HostApp.tsx's chained mount). Every other
+// vendor, including SERVICENOW_VR and SECURITY_SCORECARD, hits the real Leen
+// API exactly as it would outside this demo.
+//
+// SERVICENOW_VR has no tile logic of its own here: it comes straight off
+// GET /connectors like any other vendor. Its token is unbound, so the user
+// types the source connection id into onRamp's own "Source Connection ID"
+// field. Binding it up front would mean a top-level `source_connection_id`
+// on the invite-token request — NOT options.connection_id, which means
+// "update this existing connection" and the API rejects alongside it.
 const MOCKED_VENDORS = ['PROCESSUNITY'];
 
 // A real invite-token JWT payload has `vendors` (plural array, from
