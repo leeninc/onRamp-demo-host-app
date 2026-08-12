@@ -1,10 +1,10 @@
 import axios from 'axios';
-import { leenApiBaseUrl } from '@/lib/leenRegion';
+import { hostAppBaseUrl } from '@/lib/leenRegion';
 
 function useCreateConnection(
   setIsApiCallInProgress: (isApiCallInProgress: boolean) => void,
 ) {
-  const baseURl = leenApiBaseUrl();
+  const baseURl = hostAppBaseUrl();
 
   const createConnection = async (
     apiKey: string,

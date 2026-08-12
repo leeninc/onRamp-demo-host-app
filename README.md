@@ -39,6 +39,18 @@ bun run dev
 Which Leen environment the demo talks to. `us` (default) → `api.leen.dev`, `us-dev` →
 `api.dev.leen.dev`, `eu-c1` → `api.eu-c1.leen.dev`.
 
+Resolution order, so existing deployments keep working without being touched:
+
+1. `VITE_LEEN_REGION`, if set.
+2. Otherwise the region implied by `VITE_REACT_APP_LEEN_BASE_URL` — the Cloudflare Worker build
+   sets that rather than a region, so `https://api.dev.leen.dev/v1` resolves to `us-dev` and both
+   this app *and* onRamp are pointed at dev.
+3. Otherwise `us`.
+
+A base URL pointing at a host with no region equivalent still works for this app's own calls, but
+onRamp only accepts a region, so it will fall back to its bundled default — the console warns when
+that happens. Set `VITE_LEEN_REGION` to avoid it.
+
 This is the *only* place the environment is chosen. It sets the base URL this app mints invite
 tokens against **and** is handed to onRamp as `config.region`. That second half matters: the onRamp
 bundle bakes its own `VITE_REACT_APP_LEEN_BASE_URL` at build time in its own repo, so without an
