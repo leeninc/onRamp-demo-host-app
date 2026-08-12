@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { useCallback } from 'react';
+import { leenApiBaseUrl } from '@/lib/leenRegion';
 
 interface Connector {
   vendor: string;
@@ -23,9 +24,9 @@ export interface VendorData {
   // The real vendor to actually connect as (the tile can be a rebrand of it).
   connectAs?: string;
   brandingOverride?: BrandingOverride;
-  // Pattern A (ServiceNow): single connection, direct API pull.
+  // Passed through to onRamp for vendors that need a generated API key.
   generateApiKey?: boolean;
-  // Pattern B (ProcessUnity): a second, paired connection created right
+  // Paired flow (e.g. ProcessUnity): a second connection created right
   // after the first one succeeds. See HostApp.tsx for the chained mount.
   chainVendor?: string;
 }
@@ -33,7 +34,7 @@ export interface VendorData {
 function useGetConnectors(
   setIsApiCallInProgress: (isApiCallInProgress: boolean) => void,
 ) {
-  const baseUrl = import.meta.env.VITE_REACT_APP_LEEN_BASE_URL;
+  const baseUrl = leenApiBaseUrl();
 
   const getConnectors = useCallback(async (): Promise<VendorData[]> => {
     setIsApiCallInProgress(true);
@@ -48,29 +49,10 @@ function useGetConnectors(
         logoUrl: connector.logo_url,
         tag: connector.category,
       }));
-      const servicenow = transformedData.find((v) => v.vendor === 'SERVICENOW');
       const sscIndex = transformedData.findIndex(
         (v) => v.vendor === 'SECURITY_SCORECARD',
       );
       const processunity = transformedData.find((v) => v.vendor === 'PROCESSUNITY');
-
-      if (sscIndex !== -1 && servicenow) {
-        // Pattern A: direct pull. ServiceNow calls Leen's API itself using a
-        // generated client_id/secret. One connection, one onRamp mount.
-        transformedData.splice(sscIndex + 1, 0, {
-          vendor: 'securityscorecard_servicenow',
-          vendorName: 'SecurityScorecard – ServiceNow',
-          logoUrl: servicenow.logoUrl,
-          tag: transformedData[sscIndex].tag,
-          connectAs: 'SECURITY_SCORECARD',
-          brandingOverride: {
-            logoUrl: servicenow.logoUrl,
-            docsUrl: 'https://securityscorecard.com/',
-            vendorName: 'SecurityScorecard – ServiceNow',
-          },
-          generateApiKey: true,
-        });
-      }
 
       if (sscIndex !== -1 && processunity) {
         // Pattern B: paired sync. Leen itself pushes SSC data into

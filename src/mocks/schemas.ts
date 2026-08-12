@@ -1,34 +1,12 @@
-// JsonForms-shaped credential schemas for the two mocked vendors, matching
+// JsonForms-shaped credential schema for the one mocked vendor, matching
 // the real shape served by Leen's onRamp validate-token endpoint (see
 // leen_api/vendor-schema.json for the convention this mirrors).
 
 export const LOGO_BASE = 'https://api.leen.dev/static/img/vendor-logos';
 
 // The vendor tile list itself still comes from the real GET /connectors —
-// only these two vendors' invite-token/validate/create calls are mocked.
+// only this vendor's invite-token/validate/create calls are mocked.
 export const VENDOR_SCHEMAS: Record<string, unknown> = {
-  SECURITY_SCORECARD: {
-    vendor: 'SECURITY_SCORECARD',
-    vendorName: 'SecurityScorecard',
-    logoUrl: `${LOGO_BASE}/security_scorecard.png`,
-    docsUrl: 'https://docs.leen.dev/integrations/security-scorecard-credential',
-    credentialsType: 'SECRETS',
-    dataSchema: {
-      type: 'object',
-      properties: {
-        api_key: {
-          type: 'string',
-          password: true,
-          description: 'SecurityScorecard API Key',
-        },
-      },
-      required: ['api_key'],
-    },
-    uiSchema: {
-      type: 'VerticalLayout',
-      elements: [{ type: 'Control', scope: '#/properties/api_key' }],
-    },
-  },
   PROCESSUNITY: {
     vendor: 'PROCESSUNITY',
     vendorName: 'ProcessUnity',
