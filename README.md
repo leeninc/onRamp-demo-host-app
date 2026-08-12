@@ -46,8 +46,17 @@ explicit region the dev bundle always talks to `api.dev.leen.dev` — and a toke
 prod fails validation there with a misleading "Invalid or expired connection invite token".
 Deriving both from one value is what keeps them from drifting apart.
 
-`bundleVersion` stays independent on purpose: with a region set, running the dev bundle against the
-prod API is a valid combination.
+**Pick the region your API key and org actually live in.** They are per-environment: a prod
+`VITE_REACT_APP_API_KEY`/`VITE_REACT_APP_ORG_ID` pair does not exist in dev, and pointing at the
+wrong one fails with `{"detail":"Invalid Organization ID"}` (HTTP 401). If you see that, this is
+almost always why.
+
+`bundleVersion` is **not** related to this and stays independent on purpose — it only selects which
+onRamp build to load. `bundleVersion="dev"` with `VITE_LEEN_REGION=us` is the normal setup: the
+newest widget code against your prod credentials. Don't switch to `us-dev` just because you're on
+the dev bundle.
+
+Vite reads `.env` only at startup, so restart `bun run dev` after changing this.
 
 ### About `VITE_MOCK_LEEN`
 
