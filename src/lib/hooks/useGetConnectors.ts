@@ -1,6 +1,6 @@
 import axios from 'axios';
 import { useCallback } from 'react';
-import { leenApiBaseUrl } from '@/lib/leenRegion';
+import { hostAppBaseUrl } from '@/lib/leenRegion';
 
 interface Connector {
   vendor: string;
@@ -34,7 +34,7 @@ export interface VendorData {
 function useGetConnectors(
   setIsApiCallInProgress: (isApiCallInProgress: boolean) => void,
 ) {
-  const baseUrl = leenApiBaseUrl();
+  const baseUrl = hostAppBaseUrl();
 
   const getConnectors = useCallback(async (): Promise<VendorData[]> => {
     setIsApiCallInProgress(true);

@@ -2,7 +2,7 @@ import { SetStateAction, useEffect, useMemo, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import useCreateConnection from '@/lib/hooks/useCreateConnectionInviteToken';
 import useGetConnectors, { VendorData } from '@/lib/hooks/useGetConnectors';
-import { LEEN_REGION } from '@/lib/leenRegion';
+import { HAS_UNMAPPABLE_BASE_URL, LEEN_REGION } from '@/lib/leenRegion';
 import { LeenOnRamp, LeenOnRampResponse } from '@leendev/onramp';
 import { CheckCircle2, Loader2, SearchIcon } from 'lucide-react';
 import { toast } from './ui/use-toast';
@@ -331,7 +331,13 @@ const HostApp = () => {
           // bundle falls back to whatever base URL was baked in when its own
           // CI built it, which is how a prod token ends up being validated
           // against dev. Independent of bundleVersion on purpose.
-          config={{ region: LEEN_REGION }}
+          //
+          // Omitted for a configured base URL with no region equivalent —
+          // asserting a region we can't honour would be worse than letting the
+          // bundle use its default (leenRegion.ts warns in that case).
+          {...(HAS_UNMAPPABLE_BASE_URL
+            ? {}
+            : { config: { region: LEEN_REGION } })}
           darkMode={true}
           // bundleVersion="0.0.19"
           darkModeColor={{
