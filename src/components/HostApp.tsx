@@ -9,6 +9,12 @@ import { toast } from './ui/use-toast';
 import { Toaster } from './ui/toaster';
 import '@/types/onramp-augment.d.ts';
 
+const AWS_AUTH_TYPES = ['DIRECT_ACCESS', 'LEEN_ROLE', 'ROLE_CHAINING'] as const;
+type AwsAuthType = (typeof AWS_AUTH_TYPES)[number];
+
+const isAwsVendor = (vendor: string | undefined): boolean =>
+  Boolean(vendor?.startsWith('AWS'));
+
 const HostApp = () => {
   const orgId = import.meta.env.VITE_REACT_APP_ORG_ID;
   const apiKey = import.meta.env.VITE_REACT_APP_API_KEY;
@@ -20,6 +26,7 @@ const HostApp = () => {
   const [selectedVendorName, setSelectedVendorName] = useState<
     string | undefined
   >(undefined);
+  const [awsAuthType, setAwsAuthType] = useState<AwsAuthType>('DIRECT_ACCESS');
   const [isApiCallInProgress, setIsApiCallInProgress] =
     useState<boolean>(false);
   const [showLeenOnRamp, setShowLeenOnRamp] = useState<boolean>(false);
@@ -103,7 +110,16 @@ const HostApp = () => {
     setToken(undefined);
     setActiveLeg('first');
     const vendorToConnect = selectedVendor?.connectAs ?? selectedVendorName;
-    createConnection(apiKey, orgId, vendorToConnect)
+    // AWS connectors are the one family where the token, not the end user,
+    // decides how the connection authenticates: the API rejects an AWS invite
+    // token without options.auth_type, and onRamp renders a different form per
+    // auth type (LEEN_ROLE and ROLE_CHAINING render identical fields, so the
+    // choice cannot be deferred to the form). It is the host app's call, which
+    // is why the picker sits here rather than inside onRamp.
+    const options = isAwsVendor(vendorToConnect)
+      ? { vendor: vendorToConnect, auth_type: awsAuthType }
+      : undefined;
+    createConnection(apiKey, orgId, vendorToConnect, options)
       .then((response) => {
         setToken(response?.data.token);
         setShowLeenOnRamp(true);
@@ -269,6 +285,34 @@ const HostApp = () => {
               </div>
             )}
           </div>
+          {isAwsVendor(selectedVendor?.connectAs ?? selectedVendorName) && (
+            <div className="flex flex-col items-center mt-8">
+              <label
+                htmlFor="aws-auth-type"
+                className="text-sm font-medium mb-2"
+              >
+                AWS authentication
+              </label>
+              <select
+                id="aws-auth-type"
+                className="border rounded-md px-3 py-2 text-sm bg-white"
+                value={awsAuthType}
+                onChange={(e) =>
+                  setAwsAuthType(e.target.value as AwsAuthType)
+                }
+              >
+                {AWS_AUTH_TYPES.map((authType) => (
+                  <option key={authType} value={authType}>
+                    {authType}
+                  </option>
+                ))}
+              </select>
+              <p className="text-xs text-gray-500 mt-2 max-w-sm text-center">
+                Baked into the invite token, not chosen in the form — onRamp
+                cannot tell LEEN_ROLE and ROLE_CHAINING apart from their fields.
+              </p>
+            </div>
+          )}
           <div className="flex justify-center">
             <Button
               className="bg-[#B5FF56] text-black hover:bg-[#78a43e] min-w-[88px] mt-12"
