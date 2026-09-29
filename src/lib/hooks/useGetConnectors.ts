@@ -2,12 +2,17 @@ import axios from 'axios';
 import { useCallback } from 'react';
 import { hostAppBaseUrl } from '@/lib/leenRegion';
 
-interface Connector {
-  vendor: string;
-  vendor_name: string;
+// The fields the picker reads from an item of GET /integrations/.
+interface Integration {
+  integration_id: string;
+  name: string;
   logo_url: string;
-  category: string;
-  // Add any other fields you expect from the API response
+  categories: string[];
+}
+
+interface IntegrationsPage {
+  items: Integration[];
+  total: number;
 }
 
 export interface BrandingOverride {
@@ -20,7 +25,7 @@ export interface VendorData {
   vendor: string;
   vendorName: string;
   logoUrl: string;
-  tag: string;
+  tags: string[];
   // The real vendor to actually connect as (the tile can be a rebrand of it).
   connectAs?: string;
   brandingOverride?: BrandingOverride;
@@ -39,15 +44,27 @@ function useGetConnectors(
   const getConnectors = useCallback(async (): Promise<VendorData[]> => {
     setIsApiCallInProgress(true);
     try {
-      const response = await axios.get<Connector[]>(
-        `${baseUrl}/connectors`,
+      // The trailing slash is part of the route: without it the API answers
+      // 307 to an http:// URL, which a browser blocks from an https page.
+      // include_icon=false is sent explicitly because older deployments still
+      // default to inlining every icon (~2 MB); the tiles only use logo_url.
+      // limit=200 keeps the whole catalogue on one page (about 45 today).
+      const response = await axios.get<IntegrationsPage>(
+        `${baseUrl}/integrations/`,
+        { params: { limit: 200, include_icon: false } },
       );
+      const { items, total } = response.data;
+      if (total > items.length) {
+        console.warn(
+          `GET /integrations/ returned ${items.length} of ${total} items; raise limit.`,
+        );
+      }
       // Transform API response to match VendorData structure
-      const transformedData: VendorData[] = response.data.map(connector => ({
-        vendor: connector.vendor,
-        vendorName: connector.vendor_name,
-        logoUrl: connector.logo_url,
-        tag: connector.category,
+      const transformedData: VendorData[] = items.map(integration => ({
+        vendor: integration.integration_id,
+        vendorName: integration.name,
+        logoUrl: integration.logo_url,
+        tags: integration.categories,
       }));
       const sscIndex = transformedData.findIndex(
         (v) => v.vendor === 'SECURITY_SCORECARD',
@@ -65,7 +82,7 @@ function useGetConnectors(
           vendor: 'securityscorecard_processunity',
           vendorName: 'SecurityScorecard – ProcessUnity',
           logoUrl: processunity.logoUrl,
-          tag: transformedData[sscIndex].tag,
+          tags: transformedData[sscIndex].tags,
           connectAs: 'SECURITY_SCORECARD',
           chainVendor: 'PROCESSUNITY',
         });

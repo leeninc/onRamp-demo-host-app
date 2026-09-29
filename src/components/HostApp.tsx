@@ -101,7 +101,7 @@ const HostApp = () => {
   const filteredByTagsData =
     selectedTag === 'ALL'
       ? filteredData
-      : dynamicVendorsData.filter((vendor) => vendor.tag === selectedTag);
+      : dynamicVendorsData.filter((vendor) => vendor.tags.includes(selectedTag));
   const handleIconClick = (vendor: string): void => {
     setSelectedVendorName(vendor);
   };
@@ -231,7 +231,7 @@ const HostApp = () => {
               ALL
             </button>
             {Array.from(
-              new Set(dynamicVendorsData.flatMap((vendor) => vendor.tag)),
+              new Set(dynamicVendorsData.flatMap((vendor) => vendor.tags)),
             ).map((tag) => (
               <button
                 key={tag}

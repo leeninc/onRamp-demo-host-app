@@ -80,7 +80,7 @@ flow (`HostApp.tsx`). SecurityScorecard (real, already-deployed) connects first;
 (mocked) is then paired to it via its own `options.connection_id`, and Leen pushes data into it on
 a schedule.
 
-`SERVICENOW_VR` is an ordinary standalone tile served straight from `GET /connectors` — not a
+`SERVICENOW_VR` is an ordinary standalone tile served straight from `GET /integrations/` — not a
 rebrand and not mocked. It's a pull destination: onRamp's widget detects
 `direction: "PULL_DESTINATION"` on the real validate-token response and shows a "Source Connection
 ID" input instead of a credentials form. That input accepts any SecurityScorecard connection in the

@@ -4,7 +4,7 @@
 
 export const LOGO_BASE = 'https://api.leen.dev/static/img/vendor-logos';
 
-// The vendor tile list itself still comes from the real GET /connectors —
+// The vendor tile list itself still comes from the real GET /integrations/ —
 // only this vendor's invite-token/validate/create calls are mocked.
 export const VENDOR_SCHEMAS: Record<string, unknown> = {
   PROCESSUNITY: {
