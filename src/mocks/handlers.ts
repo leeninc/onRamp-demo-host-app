@@ -10,7 +10,7 @@ const MOCK_ORG_ID = '5718a24d-f9c8-4276-af80-088ac433e28f';
 // API exactly as it would outside this demo.
 //
 // SERVICENOW_VR has no tile logic of its own here: it comes straight off
-// GET /connectors like any other vendor. Its token is unbound, so the user
+// GET /integrations/ like any other vendor. Its token is unbound, so the user
 // types the source connection id into onRamp's own "Source Connection ID"
 // field. Binding it up front would mean a top-level `source_connection_id`
 // on the invite-token request — NOT options.connection_id, which means
